@@ -1,0 +1,38 @@
+# Cloud Build configuration for Echopanion deployment
+# Automated pipeline from GitHub to Cloud Run
+
+steps:
+  # Build the Docker image
+  - name: "gcr.io/cloud-builders/docker"
+    args:
+      - "build"
+      - "-t"
+      - "us-east1-docker.pkg.dev/echopanion/echopanion-repo/echopanion"
+      - "."
+
+  # Push the Docker image to Artifact Registry
+  - name: "gcr.io/cloud-builders/docker"
+    args:
+      - "push"
+      - "us-east1-docker.pkg.dev/echopanion/echopanion-repo/echopanion"
+
+  # Deploy to Cloud Run
+  - name: "gcr.io/google.com/cloudsdktool/cloud-sdk"
+    entrypoint: "gcloud"
+    args:
+      - "run"
+      - "deploy"
+      - "echopanion"
+      - "--image=us-east1-docker.pkg.dev/echopanion/echopanion-repo/echopanion"
+      - "--region=us-east1"
+      - "--platform=managed"
+      - "--allow-unauthenticated"
+      - "--port=8080"
+      - "--memory=512Mi"
+      - "--cpu=1"
+      - "--timeout=60s"
+      - "--concurrency=10"
+      - "--max-instances=10"
+
+options:
+  logging: CLOUD_LOGGING_ONLY
